@@ -4,7 +4,7 @@ const blacklistTokenModel = require('../models/blacklisttoken.model');
 
 module.exports.userAuthMiddleware = async (req, res, next) => {
     try {
-        const token = req.cookies.token || req.headers.authorization?.split(' ')[1]; // Get token from cookie or authorization header
+        const token = req.cookies.token || req.headers.authorization.split(' ')[1]; // Get token from cookie or authorization header
         if (!token) {
             return res.status(401).json({ error: 'No token provided' });
         }
@@ -19,6 +19,7 @@ module.exports.userAuthMiddleware = async (req, res, next) => {
 
         // Check if user exists in the database
         const user = await userModel.findById(decoded.id);
+        
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }

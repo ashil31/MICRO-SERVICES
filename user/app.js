@@ -12,8 +12,10 @@ app.use(cookieParser());
 
 
 const userRoutes = require('./routes/user.routes');
-
 app.use('/', userRoutes);
+
+const rabbitMq = require('./service/rabbit');
+rabbitMq.connectRabbit();
 
 
 

@@ -12,8 +12,10 @@ app.use(cookieParser());
 
 
 const captainRoutes = require('./routes/captain.routes');
-
 app.use('/', captainRoutes);
+
+const rabbitMq = require('./service/rabbit');
+rabbitMq.connectRabbit();
 
 
 
