@@ -4,6 +4,8 @@ const jwt = require('jsonwebtoken');
 const blacklistTokenModel = require('../models/blacklisttoken.model');
 const { subscribeToQueue } = require('../service/rabbit');
 
+let rideWaiters = [];
+
 module.exports.register = async (req, res) => {
     try {
         const { name, email, password } = req.body;
@@ -95,6 +97,39 @@ module.exports.toggleAvailability = async (req, res) => {
     }
 }
 
+// New endpoint for long polling for new rides
+// This endpoint allows the captain to poll for new rides
+// by sending a request and waiting for a response until a new ride is available
+// or a timeout occurs. The response will be sent to the captain when a new ride is available or when the timeout occurs.
+
+module.exports.pollNewRide = async (req, res) => {
+    // Set a timeout for the polling (e.g., 30 seconds)
+    const timeout = setTimeout(() => {
+        // Remove the response from waiting list and send a no content response
+        rideWaiters = rideWaiters.filter(waiter => waiter !== res);
+        res.status(204).end();
+    }, 30000);
+
+    // When the connection is closed prematurely, clear the timeout
+    req.on('close', () => {
+        clearTimeout(timeout);
+        rideWaiters = rideWaiters.filter(waiter => waiter !== res);
+    });
+
+    // Add the response to the waiters list
+    rideWaiters.push(res);
+};
+
+// Subscribe to new rides from the queue.
+// Once a new ride arrives, send data to all waiting responses.
 subscribeToQueue('new_ride', async (data) => {
-    console.log(JSON.parse(data));    
+    const rideData = JSON.parse(data);
+    if (rideWaiters.length) {
+        rideWaiters.forEach(waiter => {
+            waiter.status(200).json(rideData);
+        });
+        // Clear the waiting list once responded
+        rideWaiters = [];
+    }
+    console.log(rideData);
 });

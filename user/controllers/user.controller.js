@@ -2,6 +2,12 @@ const userModel = require('../models/user.model');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const blacklistTokenModel = require('../models/blacklisttoken.model');
+const { subscribeToQueue } = require('../service/rabbit');
+const EventEmitter = require('events');
+const rideEventEmitter = new EventEmitter();
+
+// Global array to store waiting responses for long polling ride acceptance
+
 
 module.exports.register = async (req, res) => {
     try {
@@ -54,7 +60,7 @@ module.exports.login = async (req, res) => {
 
 module.exports.getUserProfile = async (req, res) => {
     try {
-        res.status(200).json(req.user);
+        res.send(req.user);
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
@@ -78,3 +84,22 @@ module.exports.logout = async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 }
+
+// New endpoint for long polling for ride acceptance
+// This endpoint waits for a ride accepted event (from RabbitMQ) or a timeout after 30 seconds.
+module.exports.acceptedRide = async (req, res) => {
+    // Long polling: wait for 'ride-accepted' event
+    rideEventEmitter.once('ride-accepted', (data) => {
+        res.send(data);
+    });
+
+    // Set timeout for long polling (e.g., 30 seconds)
+    setTimeout(() => {
+        res.status(204).send();
+    }, 30000);
+}
+
+subscribeToQueue('ride_accepted', async (msg) => {
+    const data = JSON.parse(msg);
+    rideEventEmitter.emit('ride-accepted', data);
+});

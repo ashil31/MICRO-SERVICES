@@ -15,4 +15,6 @@ router.get('/profile', authMiddleware.captainAuthMiddleware , captainController.
 
 router.patch('/toggle-availability', authMiddleware.captainAuthMiddleware , captainController.toggleAvailability);
 
+router.get('/new-ride', authMiddleware.captainAuthMiddleware , captainController.pollNewRide);
+
 module.exports = router;

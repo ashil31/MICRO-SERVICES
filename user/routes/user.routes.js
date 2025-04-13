@@ -13,4 +13,6 @@ router.get('/logout', userController.logout);
 //Get user profile route
 router.get('/profile', authMiddleware.userAuthMiddleware , userController.getUserProfile);
 
+router.get('/accepted-ride', authMiddleware.userAuthMiddleware , userController.acceptedRide);
+
 module.exports = router;
